@@ -1,0 +1,139 @@
+/* end */
+  --color-bg: #0b0b0b;
+  --color-text: #e6e6e6;
+  --color-muted: #9aa0a6;
+  --color-accent: #32f08c;
+  --color-border: #1f1f1f;
+  --radius: 12px;
+
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+  font-family: Inter;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://lf-cdn.trae.ai/obj/trae-ai-us/trae_website_prod/static/font/Inter_18pt-Regular.8f38ec04.ttf') format('truetype');
+}
+@font-face {
+  font-family: Inter;
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://lf-cdn.trae.ai/obj/trae-ai-us/trae_website_prod/static/font/Inter_18pt-Medium.151bfc90.ttf') format('truetype');
+}
+@font-face {
+  font-family: Inter;
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://lf-cdn.trae.ai/obj/trae-ai-us/trae_website_prod/static/font/Inter_18pt-SemiBold.bac0903e.ttf') format('truetype');
+}
+
+a {
+  font-weight: 500;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover {
+  opacity: 0.9;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  background-color: #121212;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.25s ease;
+}
+button:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-accent) 30%, transparent);
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.section {
+  background: #121212;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.section + .section {
+  margin-top: 16px;
+}
+.title {
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+.accent {
+  background: var(--color-accent);
+  color: #000;
+}
+
+.win {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 8px color-mix(in oklab, var(--color-accent) 22%, transparent);
+  animation: pop 300ms ease-out, glow 1600ms ease-in-out infinite alternate;
+}
+
+@keyframes pop {
+  from { transform: scale(0.96); opacity: 0 }
+  to { transform: scale(1); opacity: 1 }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 0 8px color-mix(in oklab, var(--color-accent) 10%, transparent) }
+  to { box-shadow: 0 0 0 12px color-mix(in oklab, var(--color-accent) 24%, transparent) }
+}
+
+.confetti {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 10px;
+  opacity: 0.9;
+  transform: translateY(-20px);
+  animation: confetti-fall 1.8s ease-out forwards;
+  z-index: 9999;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0deg); }
+  100% { transform: translateY(100vh) rotate(360deg); }
+}
+:root {
