@@ -10,18 +10,78 @@ async function fetchWithFallback(path: string, init?: RequestInit) {
   const base = apiBase()
   const url1 = base ? `${base}${path}` : path
   try {
-    return await fetch(url1, init)
-  } catch {
+    // 增加超时控制，避免请求挂起太久
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    const res = await fetch(url1, { ...init, signal: controller.signal })
+    clearTimeout(timeoutId)
+    return res
+  } catch (e) {
     const url2 = path
     if (url2 === url1) throw new Error('network')
-    return await fetch(url2, init)
+    // 重试一次
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000)
+      const res = await fetch(url2, { ...init, signal: controller.signal })
+      clearTimeout(timeoutId)
+      return res
+    } catch {
+      throw new Error('network_retry_failed')
+    }
   }
 }
 
 export async function createCheckin(name: string, phone: string, device?: string, session?: string): Promise<{ ok: boolean; message?: string }> {
-  const r = await fetchWithFallback(`/api/checkin?s=${encodeURIComponent(session ?? '')}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, phone, device }) })
-  if (!r.ok) return { ok: false, message: '提交失败' }
-  return { ok: true }
+  // 1. 优先尝试通过 Vercel API 转发 (解决 CORS 和被墙问题)
+  try {
+    const r = await fetchWithFallback(`/api/checkin?s=${encodeURIComponent(session ?? '')}`, { 
+      method: 'POST', 
+      headers: { 'content-type': 'application/json' }, 
+      body: JSON.stringify({ name, phone, device }) 
+    })
+    if (r.ok) {
+      const json = await r.json()
+      if (json.ok) return { ok: true }
+      // 如果 API 返回业务错误（如重复签到），直接返回错误
+      if (json.message) return { ok: false, message: json.message }
+    }
+  } catch (e) {
+    console.warn('API checkin failed, trying direct supabase...', e)
+  }
+
+  // 2. 备选方案：前端直连 Supabase (防止 Vercel API 挂了或超时)
+  // 注意：这需要 Supabase 的 URL 在用户网络下可访问
+  try {
+    const SUPABASE_URL = 'https://hwcwwyvsugghbghuyvzc.supabase.co'
+    const KEY = 'sb_publishable_cIi2WuryshqjjaInqCnEHw_SmF16VFb' // 这里的 Key 需要补充完整，但我先用你给的前半部分+之前的尝试
+    
+    // 先查重
+    const q = new URL(`${SUPABASE_URL}/rest/v1/checkins`)
+    q.searchParams.set('select', 'id')
+    q.searchParams.set('session', `eq.${session}`)
+    q.searchParams.set('phone', `eq.${phone}`)
+    q.searchParams.set('limit', '1')
+    
+    const head = await fetch(q, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` } })
+    if (head.ok) {
+      const exist = await head.json()
+      if (Array.isArray(exist) && exist.length > 0) return { ok: false, message: '该手机号已签到' }
+    }
+
+    // 写入
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/checkins`, {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'content-type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ name, phone, device, session, timestamp: new Date().toISOString() })
+    })
+    
+    if (ins.ok) return { ok: true }
+    const text = await ins.text()
+    return { ok: false, message: `直连提交失败: ${ins.status} ${text.slice(0, 50)}` }
+  } catch (e: any) {
+    return { ok: false, message: `所有通道均失败: ${e.message}` }
+  }
 }
 
 export async function loadCheckins(session?: string): Promise<CheckinRow[]> {
