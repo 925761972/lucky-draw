@@ -51,10 +51,13 @@ export async function createCheckin(name: string, phone: string, device?: string
   }
 
   // 2. 备选方案：前端直连 Supabase (防止 Vercel API 挂了或超时)
-  // 注意：这需要 Supabase 的 URL 在用户网络下可访问
   try {
-    const SUPABASE_URL = 'https://hwcwwyvsugghbghuyvzc.supabase.co'
-    const KEY = 'sb_publishable_cIi2WuryshqjjaInqCnEHw_SmF16VFb' // 这里的 Key 需要补充完整，但我先用你给的前半部分+之前的尝试
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+    const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    
+    if (!SUPABASE_URL || !KEY) {
+      throw new Error('Missing Supabase env vars for fallback')
+    }
     
     // 先查重
     const q = new URL(`${SUPABASE_URL}/rest/v1/checkins`)

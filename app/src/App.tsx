@@ -14,20 +14,30 @@ import { useRef } from 'react'
 function App() {
   const { resetAll, addParticipantsWithMeta } = useRaffle()
   // 强制使用 location.origin 作为 base，确保生成的二维码带域名
-  const [url, setUrl] = useState('')
+  const [url, setUrl] = useState(() => {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      const base = window.location.origin
+      const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+      return `${cleanBase}/checkin`
+    }
+    return ''
+  })
   
   useEffect(() => {
-    const base = location.origin
-    // 移除末尾的斜杠
-    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
-    setUrl(`${cleanBase}/checkin`)
-  }, [])
+    if (!url && typeof window !== 'undefined' && window.location?.origin) {
+      const base = location.origin
+      // 移除末尾的斜杠
+      const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+      setUrl(`${cleanBase}/checkin`)
+    }
+  }, [url])
 
   const [checkinCount, setCheckinCount] = useState(0)
   const [session] = useState(() => localStorage.getItem('raffle_session') || uid('sess'))
   useEffect(() => { localStorage.setItem('raffle_session', session) }, [session])
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
+    if (!url) return
     const target = `${url}?s=${session}`
     Promise.resolve().then(async () => {
       try {
