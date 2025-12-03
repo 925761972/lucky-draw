@@ -73,18 +73,11 @@ function App() {
           <div className="stats-grid">
             <div className="stats-title"><h2 className="title gradient">扫码签到</h2></div>
             <div className="stats-label">已签到人数</div>
-            <canvas ref={qrCanvasRef} width={320} height={320} style={{ border: '1px solid var(--color-border)' }} />
-            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-               <button className="btn-mini" onClick={() => {
-                 const current = customBaseUrl || location.origin
-                 const input = prompt('请输入签到页面的 Base URL (例如内网穿透地址 https://xxxx.loca.lt)', current)
-                 if (input !== null) {
-                   setCustomBaseUrl(input.trim())
-                 }
-               }}>设置签到地址</button>
-               <div style={{ fontSize: 12, color: 'var(--color-muted)', maxWidth: 320, wordBreak: 'break-all' }}>当前: {url}</div>
+            <div style={{ gridRow: '2 / 4' }}>
+               <canvas ref={qrCanvasRef} width={320} height={320} style={{ border: '1px solid var(--color-border)' }} />
+               <div style={{ fontSize: 12, color: 'var(--color-muted)', maxWidth: 320, wordBreak: 'break-all', textAlign: 'center', marginTop: 4 }}>{url}</div>
             </div>
-            <div className="stats-number">{checkinCount}</div>
+            <div className="stats-number" style={{ gridColumn: 2, gridRow: '2 / 4', alignSelf: 'center' }}>{checkinCount}</div>
             <button className="btn-mini" style={{ position: 'absolute', bottom: 8, right: 16 }} onClick={() => {
               Promise.resolve().then(async () => {
                 const rows = await loadCheckins()
