@@ -49,7 +49,18 @@ export default function CheckinPage() {
     try {
       const r = await createCheckin(nm, ph, device, session)
       if (r.ok) { setDone(true); localStorage.setItem('checkin_phone', ph) }
-      else { setError(r.message || '提交失败') }
+      else { 
+        // 显示详细错误信息
+        const msg = r.message || '提交失败'
+        // 如果是网络相关错误，提示更友好
+        if (msg.includes('fetch') || msg.includes('network')) {
+          setError(`网络请求失败，请重试 (${msg})`)
+        } else if (msg === 'env_missing') {
+          setError('服务器配置错误：环境变量缺失')
+        } else {
+          setError(msg)
+        }
+      }
     } finally {
       setLoading(false)
     }
