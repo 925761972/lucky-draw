@@ -13,7 +13,7 @@ import { useRef } from 'react'
 
 function App() {
   const { resetAll, addParticipantsWithMeta } = useRaffle()
-  const [customBaseUrl, setCustomBaseUrl] = useState(() => localStorage.getItem('custom_base_url') || '')
+  const [customBaseUrl] = useState(() => localStorage.getItem('custom_base_url') || '')
   const [url, setUrl] = useState('')
   
   useEffect(() => {
