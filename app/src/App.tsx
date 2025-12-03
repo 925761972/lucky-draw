@@ -13,17 +13,15 @@ import { useRef } from 'react'
 
 function App() {
   const { resetAll, addParticipantsWithMeta } = useRaffle()
-  const [customBaseUrl] = useState(() => localStorage.getItem('custom_base_url') || '')
+  // 强制使用 location.origin 作为 base，确保生成的二维码带域名
   const [url, setUrl] = useState('')
   
   useEffect(() => {
-    const base = customBaseUrl || (import.meta as any).env?.VITE_PUBLIC_BASE_URL || location.origin
+    const base = location.origin
     // 移除末尾的斜杠
     const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
     setUrl(`${cleanBase}/checkin`)
-    if (customBaseUrl) localStorage.setItem('custom_base_url', customBaseUrl)
-    else localStorage.removeItem('custom_base_url')
-  }, [customBaseUrl])
+  }, [])
 
   const [checkinCount, setCheckinCount] = useState(0)
   const [session] = useState(() => localStorage.getItem('raffle_session') || uid('sess'))
