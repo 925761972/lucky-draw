@@ -32,7 +32,7 @@ async function fetchWithFallback(path: string, init?: RequestInit) {
   }
 }
 
-export async function createCheckin(name: string, phone: string, device?: string, session?: string): Promise<{ ok: boolean; message?: string; rank?: number }> {
+export async function createCheckin(name: string, phone: string, device?: string, session?: string): Promise<{ ok: boolean; message?: string }> {
   // 1. 优先尝试通过 Vercel API 转发 (解决 CORS 和被墙问题)
   try {
     const r = await fetchWithFallback(`/api/checkin?s=${encodeURIComponent(session ?? '')}`, { 
@@ -42,7 +42,7 @@ export async function createCheckin(name: string, phone: string, device?: string
     })
     if (r.ok) {
       const json = await r.json()
-      if (json.ok) return { ok: true, rank: json.rank }
+      if (json.ok) return { ok: true }
       // 如果 API 返回业务错误（如重复签到），直接返回错误
       if (json.message) return { ok: false, message: json.message }
     }
@@ -79,21 +79,7 @@ export async function createCheckin(name: string, phone: string, device?: string
       body: JSON.stringify({ name, phone, device, session, timestamp: new Date().toISOString() })
     })
     
-    if (ins.ok) {
-      // 写入成功后，查询当前总人数作为排名
-      try {
-        const countQ = new URL(`${SUPABASE_URL}/rest/v1/checkins`)
-        countQ.searchParams.set('select', '*')
-        countQ.searchParams.set('session', `eq.${session}`)
-        const countRes = await fetch(countQ, { method: 'GET', headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, Prefer: 'count=exact,head=true' } })
-        const range = countRes.headers.get('content-range')
-        if (range) {
-          const total = parseInt(range.split('/')[1])
-          if (!isNaN(total)) return { ok: true, rank: total }
-        }
-      } catch {}
-      return { ok: true }
-    }
+    if (ins.ok) return { ok: true }
     const text = await ins.text()
     return { ok: false, message: `直连提交失败: ${ins.status} ${text.slice(0, 50)}` }
   } catch (e: any) {
@@ -148,7 +134,7 @@ export async function resetCheckins(session?: string): Promise<boolean> {
     const r = await fetchWithFallback(`/api/checkin.reset?s=${encodeURIComponent(session ?? '')}`, { method: 'POST' })
     if (r.ok) return true
   } catch (e) {
-    console.warn('API reset failed, trying direct supabase...', e)
+    console.warn('API resetCheckins failed, trying direct supabase...', e)
   }
 
   // 2. Fallback: 直连 Supabase
@@ -158,18 +144,14 @@ export async function resetCheckins(session?: string): Promise<boolean> {
     
     if (!SUPABASE_URL || !KEY) return false
     
-    // DELETE /rest/v1/checkins?session=eq.xxx
-    const q = new URL(`${SUPABASE_URL}/rest/v1/checkins`)
-    q.searchParams.set('session', `eq.${session}`)
-    
-    const del = await fetch(q, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/checkins?session=eq.${session}`, {
       method: 'DELETE',
       headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
     })
-    
-    return del.ok
+    return res.ok
   } catch (e) {
-    console.error('All reset methods failed', e)
-    return false
+    console.error('All resetCheckins methods failed', e)
   }
+  
+  return false
 }

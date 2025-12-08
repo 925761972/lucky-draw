@@ -11,26 +11,18 @@ export default function CheckinPage() {
   const [error, setError] = useState('')
   const [device, setDevice] = useState('')
   const [session, setSession] = useState('')
-  const [rank, setRank] = useState(0)
   useEffect(() => {
-    let stop = false
-    async function tick() {
-      const c = await getCheckinCount(session)
-      setCount(c)
-      if (!stop) setTimeout(tick, 2000)
-    }
-    tick()
-    return () => { stop = true }
-  }, [])
-  useEffect(() => {
+    const url = new URL(window.location.href)
+    const s = url.searchParams.get('s') || ''
+    setSession(s)
+    
+    // 初始化检查
     const ph = localStorage.getItem('checkin_phone')
     if (ph) setDone(true)
     let did = localStorage.getItem('checkin_device')
     if (!did) { did = uid('dev'); localStorage.setItem('checkin_device', did) }
     setDevice(did)
-    const url = new URL(window.location.href)
-    const s = url.searchParams.get('s') || ''
-    setSession(s)
+
     Promise.resolve().then(async () => {
       const rows = await loadCheckins(s)
       const exists = rows.some(r => r.phone === ph || r.device === did)
@@ -40,6 +32,18 @@ export default function CheckinPage() {
       }
     })
   }, [])
+
+  useEffect(() => {
+    if (!session) return
+    let stop = false
+    async function tick() {
+      const c = await getCheckinCount(session)
+      setCount(c)
+      if (!stop) setTimeout(tick, 2000)
+    }
+    tick()
+    return () => { stop = true }
+  }, [session])
   async function submit() {
     setError('')
     const nm = name.trim()
@@ -49,11 +53,7 @@ export default function CheckinPage() {
     setLoading(true)
     try {
       const r = await createCheckin(nm, ph, device, session)
-      if (r.ok) { 
-        setDone(true)
-        localStorage.setItem('checkin_phone', ph) 
-        if (r.rank) setRank(r.rank)
-      }
+      if (r.ok) { setDone(true); localStorage.setItem('checkin_phone', ph) }
       else { 
         // 显示详细错误信息
         const msg = r.message || '提交失败'
@@ -86,7 +86,6 @@ export default function CheckinPage() {
         ) : (
           <div className="section" style={{ textAlign: 'center' }}>
             <div className="title">签到成功</div>
-            {rank > 0 && <div className="gradient" style={{ fontSize: 24, margin: '12px 0', fontWeight: 'bold' }}>您是第 {rank} 位签到者</div>}
             <div style={{ color: 'var(--color-muted)', marginTop: 8 }}>请返回主持人页面等待抽奖</div>
           </div>
         )}
