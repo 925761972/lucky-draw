@@ -8,7 +8,6 @@ import CheckinPage from './components/CheckinPage'
 import { useRaffle } from './lib/store'
 import { useEffect, useState } from 'react'
 import { loadCheckins, getCheckinCount, resetCheckins } from './lib/checkin.ts'
-import { uid } from './lib/id'
 import { useRef } from 'react'
 
 function App() {
