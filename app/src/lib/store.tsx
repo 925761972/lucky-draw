@@ -19,23 +19,40 @@ type RaffleStore = {
   resetAll: () => void
   writeSnapshot: (s: StoreSnapshot) => void
   resetSeq: number
+  sessionId: string
 }
 
 const Ctx = createContext<RaffleStore | null>(null)
 
 export function RaffleProvider({ children }: { children: React.ReactNode }) {
-  const [snapshot, setSnapshot] = useState<StoreSnapshot>(() => loadStore())
+  const [sessionId] = useState(() => {
+    // 优先使用 URL 参数（如果有），否则使用 localStorage，最后生成新的
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const s = params.get('s')
+      if (s) return s
+      return localStorage.getItem('raffle_session') || uid('sess')
+    }
+    return uid('sess')
+  })
+
+  useEffect(() => {
+    if (sessionId) localStorage.setItem('raffle_session', sessionId)
+  }, [sessionId])
+
+  const [snapshot, setSnapshot] = useState<StoreSnapshot>(() => loadStore(sessionId))
   const [resetSeq, setResetSeq] = useState(0)
 
   useEffect(() => {
-    saveStore(snapshot)
-  }, [snapshot])
+    saveStore(snapshot, sessionId)
+  }, [snapshot, sessionId])
 
   const api = useMemo<RaffleStore>(() => ({
     prizes: snapshot.prizes,
     participants: snapshot.participants,
     records: snapshot.records,
     resetSeq,
+    sessionId,
     addPrize: (name, quantity, weight) => {
       setSnapshot(s => ({
         ...s,

@@ -12,7 +12,7 @@ import { uid } from './lib/id'
 import { useRef } from 'react'
 
 function App() {
-  const { resetAll, addParticipantsWithMeta } = useRaffle()
+  const { resetAll, addParticipantsWithMeta, sessionId: session } = useRaffle()
   // 强制使用 location.origin 作为 base，确保生成的二维码带域名
   const [url, setUrl] = useState(() => {
     if (typeof window !== 'undefined' && window.location?.origin) {
@@ -33,8 +33,6 @@ function App() {
   }, [url])
 
   const [checkinCount, setCheckinCount] = useState(0)
-  const [session] = useState(() => localStorage.getItem('raffle_session') || uid('sess'))
-  useEffect(() => { localStorage.setItem('raffle_session', session) }, [session])
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
     if (!url) return
@@ -62,7 +60,7 @@ function App() {
     }
     tick()
     return () => { stop = true }
-  }, [])
+  }, [session])
   if (window.location.pathname === '/checkin') return <CheckinPage />
   return (
     <div className="container">
@@ -72,7 +70,7 @@ function App() {
           <a href="https://www.trae.ai/" target="_blank" rel="noreferrer">
             了解 TRAE
           </a>
-          <button className="btn-nofocus" onClick={async (e) => { await resetCheckins(); resetAll(); (e.currentTarget as HTMLButtonElement).blur() }} style={{ padding: '6px 10px' }}>重置</button>
+          <button className="btn-nofocus" onClick={async (e) => { await resetCheckins(session); resetAll(); (e.currentTarget as HTMLButtonElement).blur() }} style={{ padding: '6px 10px' }}>重置</button>
         </div>
       </header>
 
@@ -88,7 +86,7 @@ function App() {
             <div className="stats-number" style={{ gridColumn: 2, gridRow: '2 / 4', alignSelf: 'center' }}>{checkinCount}</div>
             <button className="btn-mini" style={{ position: 'absolute', bottom: 8, right: 16 }} onClick={() => {
               Promise.resolve().then(async () => {
-                const rows = await loadCheckins()
+                const rows = await loadCheckins(session)
                 const header = 'name,phone,timestamp\n'
                 const body = rows.map(r => `${String(r.name ?? '').replaceAll('"','""')},${String(r.phone ?? '').replaceAll('"','""')},${typeof r.timestamp === 'string' ? r.timestamp : new Date(r.timestamp ?? Date.now()).toISOString()}`).join('\n')
                 const csv = header + body
