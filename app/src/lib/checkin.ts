@@ -88,9 +88,39 @@ export async function createCheckin(name: string, phone: string, device?: string
 }
 
 export async function loadCheckins(session?: string): Promise<CheckinRow[]> {
-  const r = await fetchWithFallback(`/api/checkin.json?s=${encodeURIComponent(session ?? '')}`, { cache: 'no-store' })
-  const data = await r.json()
-  return Array.isArray(data) ? data as { name: string, phone: string, device?: string, timestamp: number }[] : []
+  // 1. 优先尝试 API
+  try {
+    const r = await fetchWithFallback(`/api/checkin.json?s=${encodeURIComponent(session ?? '')}`, { cache: 'no-store' })
+    if (r.ok) {
+      const data = await r.json()
+      if (Array.isArray(data)) return data as CheckinRow[]
+    }
+  } catch (e) {
+    console.warn('API loadCheckins failed, trying direct supabase...', e)
+  }
+
+  // 2. Fallback: 直连 Supabase
+  try {
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+    const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    
+    if (!SUPABASE_URL || !KEY) return []
+    
+    const q = new URL(`${SUPABASE_URL}/rest/v1/checkins`)
+    q.searchParams.set('select', 'name,phone,device,timestamp')
+    q.searchParams.set('session', `eq.${session}`)
+    q.searchParams.set('order', 'timestamp.asc')
+    
+    const res = await fetch(q, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` } })
+    if (res.ok) {
+      const data = await res.json()
+      return Array.isArray(data) ? data as CheckinRow[] : []
+    }
+  } catch (e) {
+    console.error('All loadCheckins methods failed', e)
+  }
+  
+  return []
 }
 
 export async function getCheckinCount(session?: string): Promise<number> {
