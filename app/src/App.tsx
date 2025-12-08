@@ -71,6 +71,7 @@ function App() {
             了解 TRAE
           </a>
           <button className="btn-nofocus" onClick={async (e) => { 
+            console.log('Reset button clicked')
             if (!confirm('确定要重置当前场次的所有签到记录吗？此操作不可恢复。')) return
             const btn = e.currentTarget as HTMLButtonElement
             const originText = btn.textContent
@@ -81,15 +82,18 @@ function App() {
               if (ok) {
                 resetAll()
                 setCheckinCount(0)
+                alert('重置成功！人数已清零。')
               } else {
                 alert('重置失败：数据库权限不足。请在 Supabase 执行 SQL: create policy "Enable delete for anon" on checkins for delete using (true);')
               }
+            } catch (err) {
+              alert('发生未知错误: ' + String(err))
             } finally {
               btn.disabled = false
               btn.textContent = originText
               btn.blur()
             }
-          }} style={{ padding: '6px 10px' }}>重置</button>
+          }} style={{ padding: '6px 10px', backgroundColor: '#d32f2f', color: 'white', border: 'none' }}>重置</button>
         </div>
       </header>
 
