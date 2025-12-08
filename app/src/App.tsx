@@ -70,7 +70,26 @@ function App() {
           <a href="https://www.trae.ai/" target="_blank" rel="noreferrer">
             了解 TRAE
           </a>
-          <button className="btn-nofocus" onClick={async (e) => { await resetCheckins(session); resetAll(); (e.currentTarget as HTMLButtonElement).blur() }} style={{ padding: '6px 10px' }}>重置</button>
+          <button className="btn-nofocus" onClick={async (e) => { 
+            if (!confirm('确定要重置当前场次的所有签到记录吗？此操作不可恢复。')) return
+            const btn = e.currentTarget as HTMLButtonElement
+            const originText = btn.textContent
+            btn.disabled = true
+            btn.textContent = '...'
+            try {
+              const ok = await resetCheckins(session)
+              if (ok) {
+                resetAll()
+                setCheckinCount(0)
+              } else {
+                alert('重置失败：数据库权限不足。请在 Supabase 执行 SQL: create policy "Enable delete for anon" on checkins for delete using (true);')
+              }
+            } finally {
+              btn.disabled = false
+              btn.textContent = originText
+              btn.blur()
+            }
+          }} style={{ padding: '6px 10px' }}>重置</button>
         </div>
       </header>
 
