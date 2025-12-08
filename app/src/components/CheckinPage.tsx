@@ -11,6 +11,7 @@ export default function CheckinPage() {
   const [error, setError] = useState('')
   const [device, setDevice] = useState('')
   const [session, setSession] = useState('')
+  const [rank, setRank] = useState(0)
   useEffect(() => {
     let stop = false
     async function tick() {
@@ -48,7 +49,11 @@ export default function CheckinPage() {
     setLoading(true)
     try {
       const r = await createCheckin(nm, ph, device, session)
-      if (r.ok) { setDone(true); localStorage.setItem('checkin_phone', ph) }
+      if (r.ok) { 
+        setDone(true)
+        localStorage.setItem('checkin_phone', ph) 
+        if (r.rank) setRank(r.rank)
+      }
       else { 
         // 显示详细错误信息
         const msg = r.message || '提交失败'
@@ -81,6 +86,7 @@ export default function CheckinPage() {
         ) : (
           <div className="section" style={{ textAlign: 'center' }}>
             <div className="title">签到成功</div>
+            {rank > 0 && <div className="gradient" style={{ fontSize: 24, margin: '12px 0', fontWeight: 'bold' }}>您是第 {rank} 位签到者</div>}
             <div style={{ color: 'var(--color-muted)', marginTop: 8 }}>请返回主持人页面等待抽奖</div>
           </div>
         )}
