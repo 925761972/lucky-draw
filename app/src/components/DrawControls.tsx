@@ -36,7 +36,15 @@ export default function DrawControls() {
 
   function run() {
     if (!prizeId) return
-    if (participants.length === 0) return
+    // 排除已中奖用户
+    const winners = new Set(records.map(r => r.participantId))
+    const candidates = participants.filter(p => !winners.has(p.id))
+
+    if (candidates.length === 0) {
+      alert('所有参与者都已中奖！')
+      return
+    }
+
     setRolling(true)
     setShowOverlay(true)
     setOverlayCount(5)
@@ -50,7 +58,7 @@ export default function DrawControls() {
     setCurrent([])
     // 快速滚动显示随机姓名
     rollTimer.current = window.setInterval(() => {
-      const grid = Array.from({ length: 6 }, () => drawSingle(participants)?.name ?? '')
+      const grid = Array.from({ length: 6 }, () => drawSingle(candidates)?.name ?? '')
       setDisplayGrid(grid)
     }, 60)
 
@@ -68,13 +76,13 @@ export default function DrawControls() {
       const now = Date.now()
       const roundId = uid('round')
       if (mode === 'single') {
-        const p = drawSingle(participants)
+        const p = drawSingle(candidates)
         if (!p) { setRolling(false); return }
         winnersNames = [p.name]
         const prizeName = prizes.find(x => x.id === prizeId)?.name
         newRecords = [{ id: uid('r'), prizeId, prizeName, participantId: p.id, timestamp: now, mode, roundId, roundIndex: 0 }]
       } else {
-        const picked = drawBatch(participants, batch)
+        const picked = drawBatch(candidates, batch)
         winnersNames = picked.map(p => p.name)
         const prizeName = prizes.find(x => x.id === prizeId)?.name
         newRecords = picked.map((p, idx) => ({ id: uid('r'), prizeId, prizeName, participantId: p.id, timestamp: now, mode, roundId, roundIndex: idx }))

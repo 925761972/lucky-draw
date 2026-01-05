@@ -15,7 +15,7 @@ function App() {
   const { resetAll, addParticipantsWithMeta, sessionId: session } = useRaffle()
   // 部署验证版本号
   useEffect(() => {
-    console.log(`%c Current Version: ${new Date().toISOString()} | Features: Random Fix, Realtime Sync, Localhost Hint`, 'background: #222; color: #bada55; padding: 4px;')
+    console.log(`%c Current Version: ${new Date().toISOString()} | Features: Random Fix, Realtime Sync, Localhost Hint, Unique Winner`, 'background: #222; color: #bada55; padding: 4px;')
   }, [])
   
   // 强制使用 location.origin 作为 base，确保生成的二维码带域名
