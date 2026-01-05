@@ -7,11 +7,17 @@ import HistoryPanel from './components/HistoryPanel'
 import CheckinPage from './components/CheckinPage'
 import { useRaffle } from './lib/store'
 import { useEffect, useState } from 'react'
-import { loadCheckins, getCheckinCount, resetCheckins } from './lib/checkin.ts'
+import { loadCheckins, resetCheckins } from './lib/checkin.ts'
 import { useRef } from 'react'
+import { supabase } from './lib/supabase'
 
 function App() {
   const { resetAll, addParticipantsWithMeta, sessionId: session } = useRaffle()
+  // 部署验证版本号
+  useEffect(() => {
+    console.log(`%c Current Version: ${new Date().toISOString()} | Features: Random Fix, Realtime Sync, Localhost Hint`, 'background: #222; color: #bada55; padding: 4px;')
+  }, [])
+  
   // 强制使用 location.origin 作为 base，确保生成的二维码带域名
   const [url, setUrl] = useState(() => {
     if (typeof window !== 'undefined' && window.location?.origin) {
@@ -45,21 +51,40 @@ function App() {
       } catch {}
     })
   }, [url, session])
+
+  // 实时监听 Supabase 变更
   useEffect(() => {
-    let stop = false
-    async function tick() {
-      try {
-        const rows = await loadCheckins(session)
-        const items = (rows as { name: string, phone: string, device?: string }[]).map(r => ({ name: r.name, meta: { phone: r.phone, device: r.device ?? '' } }))
-        ;(addParticipantsWithMeta as (items: { name: string, meta?: Record<string,string> }[]) => void)(items)
-        const c = await getCheckinCount(session)
-        setCheckinCount(c)
-      } catch {}
-      if (!stop) setTimeout(tick, 2000)
-    }
-    tick()
-    return () => { stop = true }
+    // 初始加载
+    loadCheckins(session).then(rows => {
+      const items = (rows as { name: string, phone: string, device?: string }[]).map(r => ({ name: r.name, meta: { phone: r.phone, device: r.device ?? '' } }))
+      ;(addParticipantsWithMeta as (items: { name: string, meta?: Record<string,string> }[]) => void)(items)
+      setCheckinCount(rows.length)
+    })
+
+    const channel = supabase
+      .channel('checkin-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'checkins', filter: `session=eq.${session}` },
+        (payload: any) => {
+          const r = payload.new as any
+          const item = { name: r.name, meta: { phone: r.phone, device: r.device ?? '' } }
+          ;(addParticipantsWithMeta as (items: { name: string, meta?: Record<string,string> }[]) => void)([item])
+          setCheckinCount(c => c + 1)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'checkins', filter: `session=eq.${session}` },
+        () => {
+          setCheckinCount(c => Math.max(0, c - 1))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [session])
+
   if (window.location.pathname === '/checkin') return <CheckinPage />
   return (
     <div className="container">
@@ -103,6 +128,11 @@ function App() {
             <div style={{ gridRow: '2 / 4' }}>
                <canvas ref={qrCanvasRef} width={320} height={320} style={{ border: '1px solid var(--color-border)' }} />
                <div style={{ fontSize: 12, color: 'var(--color-muted)', maxWidth: 320, wordBreak: 'break-all', textAlign: 'center', marginTop: 4 }}>{url}</div>
+               {(url.includes('localhost') || url.includes('127.0.0.1')) && (
+                 <div style={{ fontSize: 12, color: '#f66', maxWidth: 320, textAlign: 'center', marginTop: 4 }}>
+                   ⚠️ 手机无法访问 localhost，请使用电脑 IP (如 192.168.x.x) 访问网页后再扫码
+                 </div>
+               )}
             </div>
             <div className="stats-number" style={{ gridColumn: 2, gridRow: '2 / 4', alignSelf: 'center' }}>{checkinCount}</div>
             <button className="btn-mini" style={{ position: 'absolute', bottom: 8, right: 16 }} onClick={() => {

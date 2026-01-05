@@ -11,6 +11,9 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@alicloud/dysmsapi20170525": "^4.3.0",
+    "@alicloud/openapi-client": "^0.4.15",
+    "@alicloud/tea-util": "^1.4.11",
     "@supabase/supabase-js": "^2.45.4",
     "qrcode": "^1.5.4",
     "react": "^19.2.0",

@@ -1,9 +1,17 @@
 import type { Participant } from './types'
 
 export function randomInt(maxExclusive: number) {
+  if (maxExclusive <= 0) return 0
   const array = new Uint32Array(1)
-  crypto.getRandomValues(array)
-  return Number(array[0] % maxExclusive)
+  // 使用拒绝采样（Rejection Sampling）消除模运算偏差
+  // 计算最大的有效值，使得范围是 maxExclusive 的整数倍
+  const maxValid = Math.floor(0x100000000 / maxExclusive) * maxExclusive - 1
+  
+  do {
+    crypto.getRandomValues(array)
+  } while (array[0] > maxValid)
+
+  return array[0] % maxExclusive
 }
 
 export function shuffle<T>(arr: T[]): T[] {

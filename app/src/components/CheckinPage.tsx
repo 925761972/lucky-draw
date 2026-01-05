@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createCheckin, getCheckinCount, loadCheckins } from '../lib/checkin.ts'
+import { supabase } from '../lib/supabase'
 import { uid } from '../lib/id'
 
 export default function CheckinPage() {
@@ -35,14 +36,30 @@ export default function CheckinPage() {
 
   useEffect(() => {
     if (!session) return
-    let stop = false
-    async function tick() {
-      const c = await getCheckinCount(session)
-      setCount(c)
-      if (!stop) setTimeout(tick, 2000)
-    }
-    tick()
-    return () => { stop = true }
+    
+    // 初始加载人数
+    getCheckinCount(session).then(c => setCount(c))
+
+    // 实时监听
+    const channel = supabase
+      .channel('checkin-page-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'checkins', filter: `session=eq.${session}` },
+        () => {
+          setCount(c => c + 1)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'checkins', filter: `session=eq.${session}` },
+        () => {
+          setCount(c => Math.max(0, c - 1))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [session])
   async function submit() {
     setError('')
