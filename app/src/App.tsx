@@ -15,7 +15,7 @@ function App() {
   const { resetAll, addParticipantsWithMeta, sessionId: session } = useRaffle()
   // 部署验证版本号
   useEffect(() => {
-    const adminPath = import.meta.env.VITE_ADMIN_PATH || '/admin-lucky-draw'
+    const adminPath = import.meta.env.VITE_ADMIN_PATH || '/lucky-draw-admin-trae-888'
     console.log(`%c Current Version: ${new Date().toISOString()} | Features: Random Fix, Realtime Sync, Localhost Hint, Unique Winner, Secret Admin Path`, 'background: #222; color: #bada55; padding: 4px;')
     console.log(`%c Admin Access: Visit ${adminPath} to open dashboard`, 'color: #f39c12; font-weight: bold;')
   }, [])
@@ -90,8 +90,8 @@ function App() {
   if (window.location.pathname === '/checkin') return <CheckinPage />
   
   // 增加私密路径机制，防止其他人直接进入后台
-  // 默认私密路径为 /admin-lucky-draw，您可以通过环境变量 VITE_ADMIN_PATH 自定义
-  const adminPath = import.meta.env.VITE_ADMIN_PATH || '/admin-lucky-draw'
+  // 默认私密路径为 /lucky-draw-admin-trae-888，您可以通过环境变量 VITE_ADMIN_PATH 自定义
+  const adminPath = import.meta.env.VITE_ADMIN_PATH || '/lucky-draw-admin-trae-888'
   if (window.location.pathname !== adminPath) {
     return <CheckinPage />
   }
